@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fluy</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --primary:#7B5CFF;
+  --bg:#0e0e11;
+  --card:#16161c;
+  --text:#fff;
+  --muted:#9aa0a6;
+}
+*{box-sizing:border-box;font-family:Inter,system-ui}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+}
+.hidden{display:none}
+
+header{
+  padding:20px;
+  text-align:center;
+}
+.logo{
+  font-size:32px;
+  font-weight:800;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.05)}
+  100%{transform:scale(1)}
+}
+
+.container{
+  padding:16px;
+}
+.card{
+  background:var(--card);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+}
+
+button{
+  background:var(--primary);
+  border:none;
+  padding:12px;
+  border-radius:12px;
+  color:#fff;
+  font-weight:600;
+  width:100%;
+  margin-top:8px;
+}
+button:active{transform:scale(.97)}
+
+input,select{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  margin-top:8px;
+}
+
+.list-item{
+  display:flex;
+  justify-content:space-between;
+  margin-top:6px;
+  font-size:14px;
+}
+.remove{
+  color:#ff5c5c;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="container">
+  <div class="card">
+    <h2>Entrar no Fluy</h2>
+    <input id="user" placeholder="Usuário"/>
+    <input id="pass" type="password" placeholder="Senha"/>
+    <button onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+<header>
+  <div class="logo">⚡ Fluy</div>
+  <select id="month" onchange="render()"></select>
+</header>
+
+<div class="container">
+
+<div class="card">
+  <h3>Saldo Disponível</h3>
+  <h1 id="saldo">R$ 0</h1>
+</div>
+
+<div class="card">
+  <h3>Adicionar Receita</h3>
+  <input id="rValor" type="number" placeholder="Valor"/>
+  <select id="rCat">
+    <option>Salário</option>
+    <option>Renda Extra</option>
+    <option>Freelance</option>
+    <option>Outros</option>
+  </select>
+  <button onclick="addReceita()">Adicionar Receita</button>
+</div>
+
+<div class="card">
+  <h3>Adicionar Despesa</h3>
+  <input id="dValor" type="number" placeholder="Valor"/>
+  <select id="dCat">
+    <option>Moradia</option>
+    <option>Alimentação</option>
+    <option>Transporte</option>
+    <option>Lazer</option>
+    <option>Saúde</option>
+    <option>Educação</option>
+    <option>Outros</option>
+  </select>
+  <button onclick="addDespesa()">Adicionar Despesa</button>
+</div>
+
+<div class="card">
+  <h3>Despesas por Categoria</h3>
+  <div id="resumo"></div>
+</div>
+
+<canvas id="grafico"></canvas>
+
+</div>
+</div>
+
+<script>
+const login = ()=>{
+  if(user.value && pass.value){
+    localStorage.setItem("auth","1")
+    location.reload()
+  }
+}
+
+if(localStorage.getItem("auth")){
+  loginDiv = document.getElementById("login")
+  app = document.getElementById("app")
+  loginDiv.classList.add("hidden")
+  app.classList.remove("hidden")
+}
+
+const data = JSON.parse(localStorage.getItem("fluy")) || []
+
+const monthSelect = document.getElementById("month")
+const now = new Date()
+for(let i=0;i<12;i++){
+  const d = new Date(now.getFullYear(),i)
+  const opt = document.createElement("option")
+  opt.value = d.getMonth()
+  opt.text = d.toLocaleString("pt-BR",{month:"long"})
+  if(i===now.getMonth()) opt.selected=true
+  monthSelect.appendChild(opt)
+}
+
+const save = ()=>localStorage.setItem("fluy",JSON.stringify(data))
+
+const addReceita=()=>{
+  data.push({tipo:"r",valor:+rValor.value,cat:rCat.value,date:new Date()})
+  save();render()
+}
+const addDespesa=()=>{
+  data.push({tipo:"d",valor:+dValor.value,cat:dCat.value,date:new Date()})
+  save();render()
+}
+
+const render=()=>{
+  const m=+month.value
+  let saldo=0, resumo={}
+  data.filter(i=>new Date(i.date).getMonth()===m)
+  .forEach(i=>{
+    if(i.tipo==="r") saldo+=i.valor
+    else{
+      saldo-=i.valor
+      resumo[i.cat]=(resumo[i.cat]||0)+i.valor
+    }
+  })
+  document.getElementById("saldo").innerText="R$ "+saldo.toFixed(2)
+  resumoDiv.innerHTML=""
+  for(let c in resumo){
+    resumoDiv.innerHTML+=`<div class="list-item">${c}<strong>R$ ${resumo[c].toFixed(2)}</strong></div>`
+  }
+}
+
+const resumoDiv=document.getElementById("resumo")
+render()
+</script>
+
+</body>
+</html>
